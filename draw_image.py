@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Fresh build: one-page visual newspaper for Tuesday 24 November 2026.
+"""Revised build: one-page visual newspaper for Tuesday 24 November 2026.
+
+Round-2 revision. Every story is anchored to 24 November 2026 itself:
+the ICJ Rohingya ruling was 19 November (five days stale as a lead),
+so the hero is now the Houthi strike on Riyadh's PIF Tower on
+24 November (11 injured). The four panels are all 24 November news
+too: Zelensky confirms the Sparta II drone strike, a Brooklyn jury
+convicts Huawei, China names the Shenzhou-24 crew, and the Solomon
+Islands drops its China security pact for Australia.
 
 Draws entry.png with Pillow at 2x supersampling, then downscales with
 Lanczos to 1024x1024. Fully deterministic: fixed coordinates, fixed
@@ -7,8 +15,9 @@ colours, no randomness, no timestamps, no network.
 
 Layout (final 1024 px): navy banner with day + date only; one hero
 panel (image left 60%, text right); four panels in a 2x2 grid, each
-with its picture on top (~60% of the panel) and headline + one fact
-line below. No market numbers anywhere.
+with its picture on top (50% of the panel) and kicker + headline +
+one concrete fact line below. Kicker >= 16 px final, sub-lines
+>= 19 px final, so both stay legible at ~300 px wide.
 """
 import os
 from PIL import Image, ImageDraw, ImageFont
@@ -96,46 +105,88 @@ def fy(box, v):
 
 
 # ---------------------------------------------------------------- scenes
-def scene_court(d, box):
-    """Hero art: courtroom columns, golden scales of justice, Myanmar map."""
+def scene_tower(d, box):
+    """Hero art: Riyadh's PIF Tower at night, upper floors on fire
+    after the Houthi projectile strike, black smoke, glowing skyline.
+    One tall tower fills the frame; nothing near the text edge."""
     x0, y0, x1, y1 = box
-    d.rectangle(box, fill=(22, 42, 74))
-    d.rectangle([x0, y1 - 90, x1, y1], fill=(30, 55, 96))
-    cx = (x0 + x1) // 2
-    d.polygon([(x0 + 60, y0 + 150), (x1 - 60, y0 + 150), (cx, y0 + 40)],
-              fill=(232, 220, 195))
-    d.rectangle([x0 + 60, y0 + 150, x1 - 60, y0 + 178], fill=(232, 220, 195))
-    for col_x in (x0 + 90, x1 - 150):
-        d.rectangle([col_x, y0 + 190, col_x + 60, y1 - 90], fill=(232, 220, 195))
-        d.rectangle([col_x - 12, y0 + 178, col_x + 72, y0 + 196], fill=(210, 196, 168))
-        d.rectangle([col_x - 12, y1 - 108, col_x + 72, y1 - 90], fill=(210, 196, 168))
-    # Myanmar map silhouette (stylised), kept clear of the right column
-    myanmar = [(cx + 260, y0 + 210), (cx + 360, y0 + 250), (cx + 400, y0 + 360),
-               (cx + 360, y0 + 480), (cx + 310, y0 + 560), (cx + 230, y0 + 520),
-               (cx + 190, y0 + 400), (cx + 210, y0 + 290)]
-    d.polygon(myanmar, fill=(46, 90, 136), outline=GOLD, width=6)
-    label = "MYANMAR"
-    lw = d.textlength(label, font=bold(34))
-    d.text((cx + 295 - lw / 2, y0 + 600), label, font=bold(34), fill=(240, 220, 160))
-    # scales of justice, gold, centre-left
-    sx = cx - 180
-    top = y0 + 230
-    d.rectangle([sx - 8, top, sx + 8, y1 - 130], fill=GOLD_LIGHT)
-    d.ellipse([sx - 22, top - 22, sx + 22, top + 22], fill=GOLD_LIGHT)
-    d.rectangle([sx - 260, top + 8, sx + 260, top + 24], fill=GOLD_LIGHT)
-    for sign in (-1, 1):
-        px = sx + sign * 240
-        d.line([(sx + sign * 250, top + 16), (px - 70, y1 - 330)], fill=GOLD_LIGHT, width=5)
-        d.line([(sx + sign * 250, top + 16), (px + 70, y1 - 330)], fill=GOLD_LIGHT, width=5)
-        d.line([(sx + sign * 250, top + 16), (px, y1 - 330)], fill=GOLD_LIGHT, width=5)
-        d.pieslice([px - 85, y1 - 330, px + 85, y1 - 190], 0, 180, fill=GOLD_LIGHT)
-        d.rectangle([px - 85, y1 - 330, px + 85, y1 - 318], fill=GOLD_LIGHT)
-    d.rectangle([sx - 90, y1 - 150, sx + 90, y1 - 130], fill=GOLD_LIGHT)
+    w, h = x1 - x0, y1 - y0
+    d.rectangle(box, fill=(11, 19, 36))
+    for u, v in [(0.06, 0.08), (0.16, 0.16), (0.28, 0.06), (0.70, 0.10),
+                 (0.82, 0.05), (0.92, 0.16), (0.60, 0.04), (0.38, 0.14)]:
+        sx, sy = fx(box, u), fy(box, v)
+        d.ellipse([sx - 4, sy - 4, sx + 4, sy + 4], fill=(255, 255, 255))
+    # distant skyline silhouettes along the bottom
+    for u, vw, vh in [(0.00, 0.09, 0.16), (0.10, 0.07, 0.24), (0.62, 0.08, 0.20),
+                      (0.71, 0.06, 0.28), (0.78, 0.09, 0.15), (0.88, 0.12, 0.22)]:
+        bx = fx(box, u)
+        bw = vw * w
+        d.rectangle([bx, y1 - vh * h, bx + bw, y1], fill=(24, 38, 66))
+        for k in range(3):
+            wx = bx + bw * (0.25 + 0.25 * k)
+            d.rectangle([wx, y1 - vh * h + 12, wx + 8, y1 - vh * h + 26],
+                        fill=(255, 210, 110))
+    # PIF Tower: tall tapered tower, centre-left
+    cx = fx(box, 0.40)
+    top = fy(box, 0.05)
+    base = y1
+    bw_top = 0.075 * w
+    bw_base = 0.115 * w
+    d.polygon([(cx - bw_top, top), (cx + bw_top, top),
+               (cx + bw_base, base), (cx - bw_base, base)],
+              fill=(52, 78, 122))
+    # lit windows, lower two-thirds only (fire owns the top)
+    for r in range(9):
+        wy = fy(box, 0.42 + r * 0.06)
+        half = bw_top + (bw_base - bw_top) * ((wy - top) / (base - top))
+        for k in (-1, 0, 1):
+            wx = cx + k * half * 0.55
+            d.rectangle([wx - 9, wy, wx + 9, wy + 12], fill=(170, 215, 240))
+    # diagonal twist bands on the tower (kept clear of the PIF plaque
+    # at 0.46-0.62): one above it, one below it
+    for yy in (fy(box, 0.30), fy(box, 0.70)):
+        d.polygon([(cx - bw_base * 0.92, yy), (cx + bw_base * 0.92, yy - 34),
+                   (cx + bw_base * 0.92, yy - 14), (cx - bw_base * 0.92, yy + 20)],
+                  fill=(255, 210, 110))
+    # fire: orange glow + flames bursting from the upper floors
+    fx0 = fy(box, 0.12)
+    d.ellipse([cx - 130, fx0 - 50, cx + 130, fx0 + 110], fill=(255, 90, 0))
+    d.polygon([(cx - 150, fy(box, 0.30)), (cx - 90, fy(box, 0.08)),
+               (cx - 30, fy(box, 0.24)), (cx + 30, fy(box, 0.06)),
+               (cx + 95, fy(box, 0.26)), (cx + 150, fy(box, 0.10)),
+               (cx + 130, fy(box, 0.32)), (cx - 130, fy(box, 0.32))],
+              fill=(255, 140, 0))
+    d.polygon([(cx - 90, fy(box, 0.30)), (cx - 40, fy(box, 0.14)),
+               (cx + 10, fy(box, 0.27)), (cx + 60, fy(box, 0.13)),
+               (cx + 95, fy(box, 0.30))], fill=(255, 220, 80))
+    # black smoke column drifting up-left from the fire
+    for u, v, r in [(0.34, 0.10, 52), (0.28, 0.04, 62), (0.20, 0.08, 46),
+                    (0.30, 0.16, 40)]:
+        sx, sy = fx(box, u), fy(box, v)
+        d.ellipse([sx - r, sy - r * 0.7, sx + r, sy + r * 0.7],
+                  fill=(35, 35, 40))
+    # incoming projectile trail, top right
+    d.line([(fx(box, 0.97), fy(box, 0.02)), (fx(box, 0.62), fy(box, 0.13))],
+           fill=(255, 255, 255), width=6)
+    d.ellipse([fx(box, 0.60) - 14, fy(box, 0.12) - 14,
+               fx(box, 0.60) + 14, fy(box, 0.12) + 14], fill=(255, 160, 40))
+    # PIF plaque: dark band across the tower so the letters sit on a
+    # clean background, clear of windows and twist bands
+    pw = bw_top + (bw_base - bw_top) * 0.55
+    d.rectangle([cx - pw, fy(box, 0.46), cx + pw, fy(box, 0.62)],
+                fill=(10, 22, 44))
+    label = "PIF"
+    lf = bold(int(0.085 * h))
+    lw = d.textlength(label, font=lf)
+    d.text((cx - lw / 2, fy(box, 0.49)), label, font=lf, fill=(255, 255, 255))
+    # orange ground glow at the tower base
+    d.ellipse([cx - 260, y1 - 46, cx + 260, y1 + 30], fill=(255, 110, 20))
 
 
 def scene_rocket(d, box):
-    """Shenzhou-24: rocket lifting off over Earth, starry sky. All coords
-    are fractions of the panel's picture box, so nothing can overflow."""
+    """Shenzhou-24: big rocket lifting off over Earth, starry sky. All
+    coords are fractions of the panel's picture box, so nothing can
+    overflow. The rocket is wide and central so it reads at 300 px."""
     x0, y0, x1, y1 = box
     d.rectangle(box, fill=(11, 27, 51))
     for u, v in [(0.07, 0.10), (0.20, 0.22), (0.34, 0.08), (0.48, 0.18),
@@ -152,22 +203,22 @@ def scene_rocket(d, box):
     d.ellipse([fx(box, 0.62), fy(box, 0.78), fx(box, 0.90), fy(box, 0.92)],
               fill=(70, 160, 110))
     cx = fx(box, 0.50)
-    top = fy(box, 0.10)
-    body_b = fy(box, 0.66)
-    bw = (x1 - x0) * 0.09
-    d.polygon([(cx - bw, fy(box, 0.28)), (cx, top), (cx + bw, fy(box, 0.28))],
+    top = fy(box, 0.06)
+    body_b = fy(box, 0.62)
+    bw = (x1 - x0) * 0.11
+    d.polygon([(cx - bw, fy(box, 0.26)), (cx, top), (cx + bw, fy(box, 0.26))],
               fill=(200, 30, 30))
-    d.rectangle([cx - bw, fy(box, 0.28), cx + bw, body_b], fill=(245, 245, 245))
-    d.rectangle([cx - bw, fy(box, 0.48), cx + bw, fy(box, 0.55)], fill=(200, 30, 30))
-    d.ellipse([cx - bw * 0.45, fy(box, 0.33), cx + bw * 0.45, fy(box, 0.44)],
+    d.rectangle([cx - bw, fy(box, 0.26), cx + bw, body_b], fill=(245, 245, 245))
+    d.rectangle([cx - bw, fy(box, 0.46), cx + bw, fy(box, 0.54)], fill=(200, 30, 30))
+    d.ellipse([cx - bw * 0.45, fy(box, 0.31), cx + bw * 0.45, fy(box, 0.42)],
               fill=(120, 200, 235), outline=(10, 30, 60), width=4)
     d.polygon([(cx - bw, body_b - 14), (cx - bw * 1.9, body_b + 12), (cx - bw, body_b)],
               fill=(200, 30, 30))
     d.polygon([(cx + bw, body_b - 14), (cx + bw * 1.9, body_b + 12), (cx + bw, body_b)],
               fill=(200, 30, 30))
-    d.polygon([(cx - bw * 0.75, body_b), (cx + bw * 0.75, body_b), (cx, fy(box, 0.94))],
+    d.polygon([(cx - bw * 0.75, body_b), (cx + bw * 0.75, body_b), (cx, fy(box, 0.96))],
               fill=(255, 140, 0))
-    d.polygon([(cx - bw * 0.4, body_b), (cx + bw * 0.4, body_b), (cx, fy(box, 0.82))],
+    d.polygon([(cx - bw * 0.4, body_b), (cx + bw * 0.4, body_b), (cx, fy(box, 0.84))],
               fill=(255, 220, 80))
     for u, v, r in [(0.24, 0.82, 0.055), (0.76, 0.82, 0.055),
                     (0.17, 0.90, 0.045), (0.83, 0.90, 0.045)]:
@@ -176,111 +227,156 @@ def scene_rocket(d, box):
         d.ellipse([sx - rr, sy - rr, sx + rr, sy + rr], fill=(230, 230, 230))
 
 
-def scene_sea(d, box):
-    """Ukraine / Gulf of Finland: ship on a grey-blue Baltic sea."""
+def scene_sea_burning(d, box):
+    """Ukraine / Gulf of Finland: the Russian cargo ship Sparta II
+    ablaze after the Ukrainian drone strike, black smoke, a small sea
+    drone closing in at lower right. The burning ship fills the frame;
+    no flag of the wrong side anywhere on it."""
     x0, y0, x1, y1 = box
-    d.rectangle(box, fill=(176, 205, 225))
-    d.polygon([(x0, y0), (fx(box, 0.26), y0), (fx(box, 0.18), fy(box, 0.30)), (x0, fy(box, 0.34))],
-              fill=(96, 140, 90))
-    d.polygon([(x1, y0), (fx(box, 0.76), y0), (fx(box, 0.83), fy(box, 0.28)), (x1, fy(box, 0.32))],
-              fill=(96, 140, 90))
-    d.rectangle([x0, fy(box, 0.32), x1, y1], fill=(36, 90, 140))
-    for v in (0.48, 0.72, 0.92):
+    w, h = x1 - x0, y1 - y0
+    # smoke-grey sky, top strip
+    d.rectangle([x0, y0, x1, fy(box, 0.30)], fill=(120, 125, 135))
+    d.rectangle([x0, fy(box, 0.30), x1, y1], fill=(28, 78, 128))
+    # sea waves
+    for v in (0.78, 0.92):
         for u in (0.04, 0.22, 0.40, 0.58, 0.76):
             wx, wy = fx(box, u), fy(box, v)
-            d.arc([wx, wy, wx + 0.13 * (x1 - x0), wy + 0.10 * (y1 - y0)],
+            d.arc([wx, wy, wx + 0.11 * w, wy + 0.12 * h],
                   180, 360, fill=(255, 255, 255), width=6)
-    cx = fx(box, 0.50)
-    hull_y = fy(box, 0.44)
-    hull_h = 0.16 * (y1 - y0)
-    hw = 0.33 * (x1 - x0)
-    d.polygon([(cx - hw, hull_y), (cx + hw, hull_y), (cx + hw * 0.82, hull_y + hull_h),
-               (cx - hw * 0.82, hull_y + hull_h)], fill=(20, 30, 46))
-    ch = 0.13 * (y1 - y0)
-    d.rectangle([cx - hw * 0.78, hull_y - ch, cx - hw * 0.18, hull_y], fill=(255, 213, 0))
-    d.rectangle([cx - hw * 0.12, hull_y - ch, cx + hw * 0.48, hull_y], fill=(0, 91, 187))
-    d.rectangle([cx + hw * 0.54, hull_y - ch, cx + hw * 0.90, hull_y], fill=(255, 213, 0))
-    d.rectangle([cx + hw * 0.60, hull_y - ch * 2.1, cx + hw * 0.90, hull_y - ch],
-                fill=(245, 245, 245))
-    d.rectangle([cx + hw * 0.65, hull_y - ch * 1.95, cx + hw * 0.85, hull_y - ch * 1.35],
-                fill=(120, 200, 235))
-    # Ukrainian flag on the mast
-    mx = cx - hw * 0.90
-    d.line([(mx, hull_y - ch), (mx, hull_y - ch * 2.4)], fill=(20, 30, 46), width=6)
-    d.rectangle([mx, hull_y - ch * 2.4, mx + hw * 0.32, hull_y - ch * 1.95], fill=(0, 91, 187))
-    d.rectangle([mx, hull_y - ch * 1.95, mx + hw * 0.32, hull_y - ch * 1.5], fill=(255, 213, 0))
-    for u, v in [(0.12, 0.10), (0.20, 0.16), (0.84, 0.11)]:
-        gx, gy = fx(box, u), fy(box, v)
-        d.arc([gx, gy, gx + 34, gy + 20], 180, 360, fill=(40, 40, 40), width=4)
-        d.arc([gx + 34, gy, gx + 68, gy + 20], 180, 360, fill=(40, 40, 40), width=4)
+    # hull: wide, dark, red waterline, bow right
+    hx0, hx1 = fx(box, 0.06), fx(box, 0.88)
+    hull_y = fy(box, 0.52)
+    hull_h = 0.20 * h
+    d.polygon([(hx0, hull_y), (hx1, hull_y), (hx1 - 0.04 * w, hull_y + hull_h),
+               (hx0 + 0.02 * w, hull_y + hull_h)], fill=(18, 28, 44))
+    d.rectangle([hx0, hull_y + hull_h - 10, hx1 - 0.02 * w, hull_y + hull_h],
+                fill=(185, 28, 28))
+    # containers on deck
+    cy = hull_y - 0.16 * h
+    for u, cw, col in [(0.10, 0.16, (200, 60, 40)), (0.27, 0.15, (40, 110, 180)),
+                       (0.43, 0.16, (60, 140, 90))]:
+        d.rectangle([fx(box, u), cy, fx(box, u + cw), hull_y], fill=col)
+    # bridge tower, starboard side, on fire
+    bx0, bx1 = fx(box, 0.62), fx(box, 0.80)
+    by0 = fy(box, 0.22)
+    d.rectangle([bx0, by0, bx1, hull_y], fill=(235, 235, 230))
+    for r in range(3):
+        wy = by0 + 14 + r * 0.10 * h
+        d.rectangle([bx0 + 12, wy, bx1 - 12, wy + 12], fill=(120, 200, 235))
+    # flames bursting from the bridge top
+    d.polygon([(bx0 - 30, by0 + 8), (bx0 + 30, by0 - 0.16 * h),
+               (bx0 + 80, by0 + 2), (bx0 + 130, by0 - 0.14 * h),
+               (bx1 + 40, by0 + 6), (bx1 - 10, by0 + 16), (bx0 - 10, by0 + 16)],
+              fill=(255, 140, 0))
+    d.polygon([(bx0 + 10, by0 + 6), (bx0 + 50, by0 - 0.09 * h),
+               (bx0 + 95, by0 + 4), (bx0 + 60, by0 + 14)],
+              fill=(255, 220, 80))
+    # thick black smoke above the flames
+    for u, v, r in [(0.66, 0.10, 34), (0.72, 0.03, 40), (0.78, 0.09, 30)]:
+        sx, sy = fx(box, u), fy(box, v)
+        d.ellipse([sx - r, sy - r * 0.6, sx + r, sy + r * 0.6],
+                  fill=(30, 30, 35))
+    # Russian flag (white-blue-red) on the stern mast, left end
+    mx = fx(box, 0.08)
+    d.line([(mx, hull_y - 0.16 * h), (mx, hull_y - 0.34 * h)],
+           fill=(18, 28, 44), width=5)
+    fw = 0.07 * w
+    d.rectangle([mx, hull_y - 0.34 * h, mx + fw, hull_y - 0.295 * h],
+                fill=(255, 255, 255))
+    d.rectangle([mx, hull_y - 0.295 * h, mx + fw, hull_y - 0.25 * h],
+                fill=(0, 57, 166))
+    d.rectangle([mx, hull_y - 0.25 * h, mx + fw, hull_y - 0.205 * h],
+                fill=(213, 0, 50))
+    # sea drone: low grey hull + mast, lower right, with wake
+    dx0 = fx(box, 0.86)
+    dy = fy(box, 0.86)
+    d.polygon([(dx0 - 70, dy), (dx0 + 46, dy), (dx0 + 30, dy + 18),
+               (dx0 - 56, dy + 18)], fill=(60, 65, 72))
+    d.line([(dx0 - 10, dy), (dx0 - 10, dy - 34)], fill=(60, 65, 72), width=5)
+    d.ellipse([dx0 - 16, dy - 42, dx0 - 4, dy - 30], fill=(255, 60, 60))
+    d.arc([dx0 - 96, dy - 6, dx0 - 40, dy + 22], 180, 360,
+          fill=(255, 255, 255), width=5)
 
 
-def scene_un_ai(d, box):
-    """Guterres / AI: UN-blue globe with olive branches beside an AI chip."""
+def scene_huawei(d, box):
+    """US jury convicts Huawei: a courtroom verdict scene — two
+    columns, one oversized gold scales of justice in the centre, and a
+    red GUILTY band across the bottom. Reads as 'court verdict' at
+    300 px."""
     x0, y0, x1, y1 = box
-    d.rectangle(box, fill=(214, 234, 248))
-    h = y1 - y0
-    cx, cy = fx(box, 0.32), fy(box, 0.52)
-    r = 0.30 * h
-    for side in (-1, 1):
-        bx = cx + side * r * 1.25
-        d.arc([bx - 0.09 * h, cy - 0.62 * r, bx + 0.09 * h, cy + 0.62 * r],
-              90 if side < 0 else 270, 270 if side < 0 else 90,
-              fill=(60, 120, 60), width=7)
-        for k in range(4):
-            ly = cy - 0.45 * r + k * 0.30 * r
-            d.ellipse([bx - 16, ly - 9, bx + 16, ly + 9], fill=(60, 120, 60))
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(0, 158, 219))
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 255, 255), width=5)
-    d.ellipse([cx - 0.33 * r, cy - r, cx + 0.33 * r, cy + r],
-              outline=(255, 255, 255), width=4)
-    d.line([(cx - r, cy), (cx + r, cy)], fill=(255, 255, 255), width=4)
-    d.line([(cx, cy - r), (cx, cy + r)], fill=(255, 255, 255), width=4)
-    d.arc([cx - 0.9 * r, cy - 0.5 * r, cx + 0.9 * r, cy + 0.5 * r],
-          200, 340, fill=(255, 255, 255), width=4)
-    d.arc([cx - 0.9 * r, cy - 0.5 * r, cx + 0.9 * r, cy + 0.5 * r],
-          20, 160, fill=(255, 255, 255), width=4)
-    # AI chip, lower right
-    c0, c1 = fx(box, 0.60), fx(box, 0.93)
-    ct, cb = fy(box, 0.42), fy(box, 0.94)
-    d.rectangle([c0, ct, c1, cb], fill=(20, 30, 46))
-    for k in range(4):
-        px = c0 + (k + 0.5) * (c1 - c0) / 4
-        d.line([(px, ct - 16), (px, ct)], fill=(20, 30, 46), width=8)
-        d.line([(px, cb), (px, cb + 16)], fill=(20, 30, 46), width=8)
-    ai = "AI"
-    af = bold(int(0.24 * h))
-    aw = d.textlength(ai, font=af)
-    d.text(( (c0 + c1 - aw) / 2, (ct + cb) / 2 - af.size * 0.62), ai,
-           font=af, fill=(255, 255, 255))
+    w, h = x1 - x0, y1 - y0
+    d.rectangle(box, fill=(16, 32, 64))
+    # courthouse columns at both edges
+    for cx in (fx(box, 0.05), fx(box, 0.88)):
+        d.rectangle([cx, y0, cx + 0.07 * w, fy(box, 0.78)], fill=(232, 220, 195))
+        d.rectangle([cx - 8, fy(box, 0.74), cx + 0.07 * w + 8, fy(box, 0.78)],
+                    fill=(210, 196, 168))
+    # judge's bench line
+    d.rectangle([x0, fy(box, 0.78), x1, y1], fill=(92, 58, 32))
+    # oversized scales of justice, centred
+    sx = fx(box, 0.50)
+    top = fy(box, 0.10)
+    d.rectangle([sx - 10, top, sx + 10, fy(box, 0.70)], fill=GOLD_LIGHT)
+    d.ellipse([sx - 26, top - 26, sx + 26, top + 26], fill=GOLD_LIGHT)
+    d.rectangle([sx - 0.30 * w, top + 8, sx + 0.30 * w, top + 26],
+                fill=GOLD_LIGHT)
+    for sign in (-1, 1):
+        px = sx + sign * 0.27 * w
+        d.line([(sx + sign * 0.29 * w, top + 16), (px - 52, fy(box, 0.46))],
+               fill=GOLD_LIGHT, width=6)
+        d.line([(sx + sign * 0.29 * w, top + 16), (px + 52, fy(box, 0.46))],
+               fill=GOLD_LIGHT, width=6)
+        d.line([(sx + sign * 0.29 * w, top + 16), (px, fy(box, 0.46))],
+               fill=GOLD_LIGHT, width=6)
+        d.pieslice([px - 62, fy(box, 0.46), px + 62, fy(box, 0.64)], 0, 180,
+                   fill=GOLD_LIGHT)
+        d.rectangle([px - 62, fy(box, 0.46), px + 62, fy(box, 0.50)],
+                    fill=GOLD_LIGHT)
+    d.rectangle([sx - 80, fy(box, 0.70), sx + 80, fy(box, 0.76)],
+                fill=GOLD_LIGHT)
+    # red GUILTY band across the bottom of the picture
+    d.rectangle([x0, fy(box, 0.80), x1, y1], fill=(255, 255, 255))
+    word = "GUILTY"
+    wf = bold(int(0.16 * h))
+    ww = d.textlength(word, font=wf)
+    d.text(((x0 + x1 - ww) / 2, fy(box, 0.815)), word, font=wf, fill=RED)
 
 
 def scene_pacific(d, box):
-    """Solomon Islands / Australia: stylised Pacific map, sun, waves."""
+    """Solomon Islands / Australia: big Pacific map. Australia fills
+    the lower left, the Solomon chain sits upper right, a gold arrow
+    runs between them. Labels sit clear of every island and the arrow;
+    no dotted trail, no sun, nothing collides."""
     x0, y0, x1, y1 = box
     d.rectangle(box, fill=(158, 205, 225))
-    sx, sy = fx(box, 0.88), fy(box, 0.10)
-    d.ellipse([sx - 34, sy - 34, sx + 34, sy + 34], fill=(255, 200, 60))
-    aus = [(0.06, 0.52), (0.18, 0.44), (0.33, 0.45), (0.43, 0.56),
-           (0.40, 0.72), (0.30, 0.84), (0.18, 0.80), (0.08, 0.66)]
-    d.polygon([(fx(box, u), fy(box, v)) for u, v in aus],
-              fill=(224, 179, 106), outline=(150, 100, 40), width=4)
-    d.text((fx(box, 0.13), fy(box, 0.58)), "AUSTRALIA", font=bold(30), fill=(90, 55, 20))
-    islands = [(0.52, 0.26), (0.60, 0.19), (0.69, 0.22), (0.77, 0.15),
-               (0.85, 0.20), (0.64, 0.34), (0.74, 0.32)]
+    # label first, top area, well clear of the islands below it
+    d.text((fx(box, 0.50), fy(box, 0.02)), "SOLOMON ISLANDS",
+           font=bold(30), fill=(20, 60, 40))
+    # Solomon island chain, upper right, large green ellipses
+    islands = [(0.56, 0.32), (0.65, 0.26), (0.74, 0.30), (0.83, 0.24),
+               (0.90, 0.32), (0.68, 0.42), (0.78, 0.41)]
     for u, v in islands:
         ix, iy = fx(box, u), fy(box, v)
-        d.ellipse([ix - 18, iy - 11, ix + 18, iy + 11], fill=(46, 125, 70),
+        d.ellipse([ix - 26, iy - 15, ix + 26, iy + 15], fill=(46, 125, 70),
                   outline=(255, 255, 255), width=3)
-    d.text((fx(box, 0.56), fy(box, 0.40)), "SOLOMON ISLANDS", font=bold(28),
-           fill=(20, 60, 40))
-    for k in range(5):
-        lx, ly = fx(box, 0.56 - k * 0.03), fy(box, 0.44 + k * 0.045)
-        d.ellipse([lx - 5, ly - 5, lx + 5, ly + 5], fill=(20, 60, 40))
-    for v in (0.86, 0.94):
-        for u in (0.03, 0.21, 0.39, 0.57, 0.75):
+    # Australia, lower left, large
+    aus = [(0.05, 0.56), (0.16, 0.48), (0.31, 0.49), (0.41, 0.60),
+           (0.38, 0.76), (0.28, 0.88), (0.16, 0.84), (0.06, 0.70)]
+    d.polygon([(fx(box, u), fy(box, v)) for u, v in aus],
+              fill=(224, 179, 106), outline=(150, 100, 40), width=4)
+    d.text((fx(box, 0.12), fy(box, 0.62)), "AUSTRALIA", font=bold(30),
+           fill=(90, 55, 20))
+    # gold partnership arrow: Australia -> Solomons, routed between them
+    ax0, ay0 = fx(box, 0.42), fy(box, 0.58)
+    ax1, ay1 = fx(box, 0.54), fy(box, 0.40)
+    d.line([(ax0, ay0), (ax1, ay1)], fill=GOLD, width=14)
+    d.polygon([(ax1, ay1 - 22), (ax1 + 26, ay1 + 6), (ax1 - 14, ay1 + 18)],
+              fill=GOLD)
+    # waves along the bottom
+    for v in (0.92,):
+        for u in (0.46, 0.64, 0.82):
             wx, wy = fx(box, u), fy(box, v)
-            d.arc([wx, wy, wx + 0.11 * (x1 - x0), wy + 0.09 * (y1 - y0)],
+            d.arc([wx, wy, wx + 0.11 * (x1 - x0), wy + 0.07 * (y1 - y0)],
                   180, 360, fill=(255, 255, 255), width=5)
 
 
@@ -312,34 +408,40 @@ def build():
     hx0, hy0, hx1, hy1 = MARGIN, 232, W - MARGIN, 992
     d.rectangle([hx0, hy0, hx1, hy1], fill=(255, 255, 255), outline=INK, width=4)
     img_w = int((hx1 - hx0) * 0.60)
-    render_scene(img, scene_court, (hx0 + 4, hy0 + 4, hx0 + img_w, hy1 - 4))
+    render_scene(img, scene_tower, (hx0 + 4, hy0 + 4, hx0 + img_w, hy1 - 4))
     tx = hx0 + img_w + 36
     tw = hx1 - 36 - tx
-    d.text((tx, hy0 + 44), "TOP STORY  •  THE HAGUE", font=bold(36), fill=RED)
-    fnt, lines = fit_bold(d, "World Court: Myanmar Guilty of Rohingya Genocide",
+    d.text((tx, hy0 + 44), "TOP STORY  •  RIYADH", font=bold(36), fill=RED)
+    fnt, lines = fit_bold(d, "Houthi Missile Hits Riyadh's PIF Tower",
                           tw, 300, 78)
     y = hy0 + 110
     for ln in lines:
         d.text((tx, y), ln, font=fnt, fill=INK)
         y += int(fnt.size * 1.12)
-    sub = ("The International Court of Justice rules Myanmar committed "
-           "genocide against the Rohingya; 14 states backed the case.")
+    sub = ("A Houthi projectile strikes Riyadh's 80-storey PIF Tower, "
+           "injuring 11 people in a second strike in a week.")
     draw_wrapped(d, sub, reg(40), tx, y + 22, tw, 52, SUB)
-    d.text((tx, hy1 - 70), "ICJ  •  ROHINGYA  •  14 STATES", font=bold(30), fill=NAVY)
+    d.text((tx, hy1 - 70), "RIYADH  •  11 INJURED  •  2ND IN A WEEK",
+           font=bold(32), fill=NAVY)
 
-    # --- four small panels, 2 x 2 grid; image top 60%, text below
+    # --- four small panels, 2 x 2 grid; image top 50%, text below
+    # kicker 32 (16 px final), sub 38 (19 px final): legible at 300 px.
     panels = [
-        ("SHENZHOU-24  •  CHINA", "China Launches Shenzhou-24 Crew to Space",
-         "China sends its Shenzhou-24 crew to the Tiangong station.",
+        ("UKRAINE  •  GULF OF FINLAND", "Ukraine's Drones Set Russian Ship Ablaze",
+         "Zelensky confirms Ukrainian drones set Russian ship Sparta II "
+         "ablaze; all 16 crew got off.",
+         scene_sea_burning),
+        ("UNITED STATES  •  HUAWEI", "Huawei Guilty on 10 of 12 Counts",
+         "Brooklyn jury convicts Huawei on 10 of 12 counts, including "
+         "bank fraud; racketeering cleared.",
+         scene_huawei),
+        ("SHENZHOU-24  •  CHINA", "China Names First Foreign Astronaut",
+         "China names Pakistani pilot Zeeshan Ali as the first foreign "
+         "astronaut bound for Tiangong.",
          scene_rocket),
-        ("UKRAINE  •  GULF OF FINLAND", "Ukraine War Spills Into Gulf of Finland",
-         "Finland and Baltic states watch the Gulf shipping lanes.",
-         scene_sea),
-        ("UNITED NATIONS  •  AI", "Guterres Warns World Must Govern AI",
-         "UN chief Guterres urges global rules for artificial intelligence.",
-         scene_un_ai),
-        ("PACIFIC  •  AUSTRALIA", "Solomon Islands Turns to Australia for Help",
-         "The Pacific island nation deepens its ties with Canberra.",
+        ("PACIFIC  •  AUSTRALIA", "Solomon Islands Picks Australia",
+         "Solomon Islands scraps its 2022 China pact and names Australia "
+         "its primary security partner.",
          scene_pacific),
     ]
     gx0, gy0 = MARGIN, 1016
@@ -350,16 +452,16 @@ def build():
         py0 = gy0 + (i // 2) * (gh + 24)
         px1, py1 = px0 + gw, py0 + gh
         d.rectangle([px0, py0, px1, py1], fill=(255, 255, 255), outline=INK, width=4)
-        ih = int(gh * 0.60)
+        ih = int(gh * 0.50)
         render_scene(img, scene, (px0 + 4, py0 + 4, px1 - 4, py0 + ih))
-        ty = py0 + ih + 14
-        d.text((px0 + 28, ty), kicker, font=bold(26), fill=RED)
-        fnt, lines = fit_bold(d, head, gw - 56, 100, 48)
-        y = ty + 42
+        ty = py0 + ih + 12
+        d.text((px0 + 28, ty), kicker, font=bold(32), fill=RED)
+        fnt, lines = fit_bold(d, head, gw - 56, 104, 46)
+        y = ty + 38
         for ln in lines:
             d.text((px0 + 28, y), ln, font=fnt, fill=INK)
             y += int(fnt.size * 1.12)
-        draw_wrapped(d, sub, reg(30), px0 + 28, y + 6, gw - 56, 38, SUB)
+        draw_wrapped(d, sub, reg(38), px0 + 28, y + 4, gw - 56, 42, SUB)
 
     small = img.resize((1024, 1024), Image.LANCZOS)
     return small
